@@ -1,0 +1,9 @@
+/run/numberOfThreads 8
+#
+# Initialize kernel
+/run/initialize
+# /tracking/verbose 1
+
+/gun/particle pi0
+/gun/energy 10 GeV
+/run/beamOn 5000

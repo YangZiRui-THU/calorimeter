@@ -58,15 +58,16 @@ def pixel_pos_list():
 def distance(pos1, pos2):
     return np.linalg.norm(pos1-pos2)
 
-@functools.lru_cache(maxsize=48)
+@functools.lru_cache(maxsize=None)
 def find_shower_pixel(idx_max):
     # find pixels with distance less than 3.5cm with idx_max of pixel
     max_pos = pixel_pos_list()[idx_max]
     shower_pixels = np.array([i for i in range(nofCells*nofCells) if distance(pixel_pos_list()[i], max_pos) < 3.5])
     return shower_pixels
-def get_shower_info(eSen):
+def get_shower_info(eSen, idx_max=None):
     # return shower_energy, shower_pos
-    idx_max = np.argmax(eSen)
+    if idx_max is None:
+        idx_max = np.argmax(eSen)
     shower_pixels = find_shower_pixel(idx_max)
     shower_energy = np.sum(eSen[shower_pixels])
     shower_pos = np.average(pixel_pos_list()[shower_pixels], axis=0, weights=eSen[shower_pixels])
@@ -100,6 +101,11 @@ def res_fit(sigma, energy, ax:plt.Axes=None):
     if ax is not None:
         res.plot_fit(ax,numpoints=1000)
     return res.best_values['a'], res.best_values['b']
+def edep_plot(eSen, ax):
+    # input shape 1600,
+    eSend2d = np.reshape(eSen, (nofCells,nofCells))
+    h = ax.imshow(eSend2d, cmap='plasma', interpolation='nearest')
+    return h
 if __name__ == "__main__":
     energy, num = extract(path)
     egap, labs, lgap, lsen, eSen, eAbs = reader_csv(path)
