@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import json
 import lmfit
 from sklearn.cluster import KMeans
-import sys
+import pandas as pd
 path = "./data/pi0.csv"
 cali_result = "./data/cali_result.json"
 
@@ -29,17 +29,17 @@ def data_filt(mass_all, dis_all):
     ykmeans = kmeans.predict(X)
     # convert dtype to boolean
     ykmeans = ykmeans == 1
-    print(ykmeans.dtype)
     if np.mean(mass_all[ykmeans]) < np.mean(mass_all[~ykmeans]):
         ykmeans = ~ykmeans
     return ykmeans
 
-mass_all = []
-dis_all = []
 if __name__ == "__main__":
     egap, labs, lgap, lsen, eSen, eAbs = utils.reader_csv(path)
-    eSen = enr_rebuild()(eSen)
+    # change unit to GeV
+    # eSen = enr_rebuild()(eSen*1e-3)
+    rebuild = enr_rebuild()
     num = eSen.shape[0]
+    data = np.zeros(num, dtype=[('mass', 'f'), ('dis', 'f'), ('label', 'b'),('e1','f'),('e2','f'),('p1','f',(2,)),('p2','f',(2,))])
     for i in range(num):
         # shower with max energy
         idx1 = np.argmax(eSen[i])
@@ -49,19 +49,20 @@ if __name__ == "__main__":
         e[utils.find_shower_pixel(idx1)] = 0
         idx2 = np.argmax(e)
         del e
-        dis_all.append(utils.distance(utils.pixel_pos_list()[idx1], utils.pixel_pos_list()[idx2]))
-        if dis_all[-1] < 0:
-            continue
+        dis = utils.distance(utils.pixel_pos_list()[idx1], utils.pixel_pos_list()[idx2])
         energy2, pos2 = utils.get_shower_info(eSen[i], idx_max=idx2)
+        energy1, energy2 = rebuild(energy1*1e-3), rebuild(energy2*1e-3)
         mass = pi_mass(energy1, pos1, energy2, pos2)
-        mass_all.append(mass)
-    mass_all = np.array(mass_all)
-    dis_all = np.array(dis_all)
-    ykmeans = data_filt(mass_all, dis_all)
+        data[i] = (mass, dis, 0, energy1, energy2, pos1, pos2)
+        eSen[i][idx1] = 50
+        eSen[i][idx2] = 50
+    
+    # data = data[data['label']]
+    mass_all = data['mass']
+    dis_all = data['dis']
+    data['label'] = data_filt(data['mass'], data['dis'])
     data_raw = np.array([dis_all, mass_all]).T
 
-    # mass_all = mass_all[ykmeans]
-    # dis_all = dis_all[ykmeans]
     print(f"num: {num}")
     print(f"num mass: {np.shape(mass_all)}")
     print(f"num dis: {np.shape(dis_all)}")
@@ -75,7 +76,7 @@ if __name__ == "__main__":
     mass_his, mass_bins = np.histogram(mass_all,bins=50)
     mass_bins = 0.5*(mass_bins[1:]+mass_bins[:-1])
     mod = lmfit.models.GaussianModel()
-    par = mod.make_params(amplitude=1, center=130, sigma=1)
+    par = mod.make_params(amplitude=1, center=0.13, sigma=1)
     out = mod.fit(mass_his, par, x=mass_bins)
     print(out.fit_report())
     fig,axs = plt.subplots(3,2)
@@ -85,20 +86,22 @@ if __name__ == "__main__":
     out.plot_fit(axs[0,1])
     axs[0,1].set_title("fit plot")
     
-    out.plot_residuals(axs[1,1])
-    axs[1,1].set_title("residual plot")
-    
     axs[1,0].hist(dis_all,bins=50)
     axs[1,0].set_title("dis distribution")
     
-    axs[2,0].scatter(mass_all, dis_all)
+    axs[1,1].hist(data['e1']+data['e2'],bins=100)
+    axs[1,1].set_title("e1+e2 distribution")
+    
+    scatter_plot = axs[2,0].scatter(mass_all, dis_all, c=data['e1']+data['e2'], s=20, cmap='viridis')
+    plt.colorbar(scatter_plot, ax=axs[2,0])
     axs[2,0].set_title("mass vs dis")
     
-    axs[2,1].scatter(data_raw[:,1], data_raw[:,0], c=ykmeans, s=20, cmap='viridis')
+    scatter_plot = axs[2,1].scatter(data_raw[:,1], data_raw[:,0], c=data['label'], s=20, cmap='viridis')
+    plt.colorbar(scatter_plot, ax=axs[2,1])
     axs[2,0].set_title("mass vs dis")
 
     plt.tight_layout()
-    plt.savefig("./data/pi0.png")
+    # plt.savefig("./data/pi0.png")
     plt.show()
     fig,axs = plt.subplots(2,2)
     idx = 0
@@ -108,9 +111,11 @@ if __name__ == "__main__":
     utils.edep_plot(eSen[1], axs[0,1])
     axs[0,1].set_title(f"dis:{data_raw[idx,0]}, mass:{data_raw[idx,1]}")
     idx = np.argmax(data_raw[:,0])
+    print(idx)
     utils.edep_plot(eSen[idx], axs[1,0])
-    axs[1,0].set_title(f"dis:{data_raw[idx,0]}, mass:{data_raw[idx,1]}")
+    axs[1,0].set_title(f"dis:{data_raw[idx,0]}, mass:{data_raw[idx,1]}, e1+e2={data['e1'][idx]+data['e2'][idx]}")
     idx = np.argmin(data_raw[:,0])
+    print(idx)
     utils.edep_plot(eSen[idx], axs[1,1])
-    axs[1,1].set_title(f"dis:{data_raw[idx,0]}, mass:{data_raw[idx,1]}")
+    axs[1,1].set_title(f"dis:{data_raw[idx,0]}, mass:{data_raw[idx,1]}, e1+e2={data['e1'][idx]+data['e2'][idx]}")
     plt.show()

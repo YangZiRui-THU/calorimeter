@@ -17,9 +17,9 @@ if __name__ == '__main__':
     # raw data proess and fit
     for i,(e, p) in enumerate(zip(Energy, path)):
         egap, labs, lgap, lsen, eSen, eAbs = reader_csv(p)
-        energys[i,:], pos = get_exp_info(eSen)
+        energys[i,:], pos = get_exp_info(eSen*1e-3)
         mu, s = gaus_fit(energys[i,:])
-        edep[i], sig[i] = mu*1e-3, s*1e-3
+        edep[i], sig[i] = mu, s
     p = np.polyfit(edep,Energy, 1, w=1./sig)
     cali_result['ec'] = {
         "slope": p[0],
@@ -36,7 +36,7 @@ if __name__ == '__main__':
     ax.plot(edep, np.polyval(p, edep), label=f"fit:{p[0]:.2f}x+{p[1]:.2f}")
     ax.legend()
     ax:plt.Axes = axs[0,1]
-    ax.plot(center*1e-3,Energy, 'o', label="data")
+    ax.plot(center,Energy, 'o', label="data")
     ax.plot(Energy,Energy)
     ax.legend()
     a,b = utils.res_fit(sigma,center,ax=axs[1,0])
