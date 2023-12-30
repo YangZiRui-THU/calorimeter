@@ -59,10 +59,10 @@ def distance(pos1, pos2):
     return np.linalg.norm(pos1-pos2)
 
 @functools.lru_cache(maxsize=None)
-def find_shower_pixel(idx_max):
+def find_shower_pixel(idx_max,d = 3.5):
     # find pixels with distance less than 3.5cm with idx_max of pixel
     max_pos = pixel_pos_list()[idx_max]
-    shower_pixels = np.array([i for i in range(nofCells*nofCells) if distance(pixel_pos_list()[i], max_pos) < 3.5])
+    shower_pixels = np.array([i for i in range(nofCells*nofCells) if distance(pixel_pos_list()[i], max_pos) < d])
     return shower_pixels
 def get_shower_info(eSen, idx_max=None):
     # return shower_energy, shower_pos
@@ -101,10 +101,13 @@ def res_fit(sigma, energy, ax:plt.Axes=None):
     if ax is not None:
         res.plot_fit(ax,numpoints=1000)
     return res.best_values['a'], res.best_values['b']
-def edep_plot(eSen, ax):
+def edep_plot(eSen, ax:plt.Axes, v = None, norm=None):
     # input shape 1600,
     eSend2d = np.reshape(eSen, (nofCells,nofCells))
-    h = ax.imshow(eSend2d, cmap='plasma', interpolation='nearest')
+    if v is not None:
+        h = ax.imshow(eSend2d, cmap='plasma', interpolation='nearest',norm=norm, vmin=v[0], vmax=v[1])
+    else:
+        h = ax.imshow(eSend2d, cmap='plasma', interpolation='nearest',norm=norm)
     return h
 if __name__ == "__main__":
     energy, num = extract(path)
