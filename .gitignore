@@ -3,3 +3,5 @@ B4a/.cache
 B4a/data_morley
 .vscode
 __pycache__
+*.csv
+*.png

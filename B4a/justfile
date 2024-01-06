@@ -13,7 +13,8 @@ build:
 
 # energy of gamma, unit GeV
 run_gamma energy num='1000': (edit energy num) && (rename energy num)
-  just run run_gamma.mac
+  #!/usr/bin/env bash
+  time just run run_gamma.mac
 
 run_all:
   just run_gamma 1
@@ -28,4 +29,4 @@ edit energy num:
   echo "/gun/energy {{energy}} GeV" >> run_gamma.mac
   echo "/run/beamOn {{num}}" >> run_gamma.mac
 rename energy num:
-  mv ./build/B4.csv ./data/B4_{{energy}}_{{num}}.csv
+  mv ./build/B4.csv ./data/B4_randomOFF_{{energy}}_{{num}}.csv

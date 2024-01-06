@@ -4,7 +4,7 @@ import subprocess
 import functools
 import matplotlib.pyplot as plt
 import lmfit
-path = "./build/B4_1_1000.csv"
+path = "./data/B4_100_1000.csv"
 nofCells = 40
 calorSizeXY = 1.01 # cm
 def extract(path):
@@ -117,7 +117,8 @@ if __name__ == "__main__":
     fig.suptitle(f"energy:{energy}MeV, num:{num}")
     ax:plt.Axes = axs[0,0]
     ax.set_title("energy histogram")
-    mu, resolution = gaus_fit(energys, ax)
+    mu, sigma = gaus_fit(energys, ax)
+    ax.legend(["data",f"$\\mu$={mu:.1f},$\\sigma$={sigma:.1f}"])
     ax:plt.Axes = axs[0,1]
     ax.set_title("position scatter")
     h2 = ax.scatter(pos[:,0], pos[:,1])
